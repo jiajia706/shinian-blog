@@ -1,0 +1,7 @@
+# Cloudflare Pages 部署配置
+# 用途：配合 `wrangler pages deploy dist` 直接上传已构建好的静态站
+# 注意：本站是“预构建”的纯静态站，dist/ 已经是完整产物，
+#      Cloudflare 不需要再执行构建命令（用 Direct Upload 方式）。
+
+name = "shinian-blog"
+pages_build_output_dir = "dist"
