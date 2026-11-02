@@ -128,7 +128,8 @@ function buildIndex() {
 }
 
 function buildPost(a) {
-  const cover = a.cover_image ? `<img class="post-cover" src="${escAttr(a.cover_image)}" alt="" />` : "";
+  const coverSrc = a.cover_image ? (a.cover_image.startsWith("http") ? a.cover_image : "../" + a.cover_image) : "";
+  const cover = coverSrc ? `<img class="post-cover" src="${escAttr(coverSrc)}" alt="" />` : "";
   const pinned = a.is_pinned ? '<span class="tag pinned">置顶</span>' : "";
   const others = articles.filter((x) => x.id !== a.id).slice(0, 6);
   const recent = articles
@@ -228,6 +229,15 @@ function copyAssets() {
   ["styles.css", "ssg.js"].forEach((f) => {
     fs.copyFileSync(path.join(ASSETS, f), path.join(DIST, "assets", f));
   });
+  // 复制封面图等二进制静态资源
+  const coversSrc = path.join(ASSETS, "covers");
+  if (fs.existsSync(coversSrc)) {
+    const coversDst = path.join(DIST, "assets", "covers");
+    fs.mkdirSync(coversDst, { recursive: true });
+    fs.readdirSync(coversSrc).forEach((f) => {
+      fs.copyFileSync(path.join(coversSrc, f), path.join(coversDst, f));
+    });
+  }
 }
 
 // ===== 主流程 =====
