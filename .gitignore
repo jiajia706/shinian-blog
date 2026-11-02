@@ -10,6 +10,9 @@ wrangler.toml.local
 .DS_Store
 *.log
 
+# 部署产物（本地生成，不入库）
+*.zip
+
 # 旧的云后端演示版本（已弃用，SSG 迁移后不再使用），根目录锚定避免误伤 dist/
 /admin.html
 /index.html

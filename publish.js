@@ -3,7 +3,7 @@
  * 十年博客 · 代理发布引擎（方案 A）
  * -------------------------------------------------------------
  * 用途：由 AI / 站长在本地代理发布文章，流程为
- *        写入 articles.json → 重新生成 dist/ →（可选）部署 Cloudflare Pages
+ *        写入 articles.json → 重新生成 dist/ → 上线到 EdgeOne Pages
  *
  * 命令：
  *   node publish.js add --file article.json     从 JSON 文件新增一篇文章
@@ -117,27 +117,30 @@ function listArticles() {
 
 async function deploy() {
   build();
-  const hasToken = !!process.env.CF_API_TOKEN;
-  if (!hasToken) {
-    console.log(
-      "\n⚠️  未检测到 CF_API_TOKEN 环境变量，跳过自动部署。\n" +
-        "    手动部署任选其一：\n" +
-        "    1) 本地执行：  npx wrangler pages deploy dist   （需先 npm i -g wrangler 并设置 CF_API_TOKEN）\n" +
-        "    2) Git 方式：  把本项目推到 GitHub，在 Cloudflare Pages 后台连接仓库（Build 命令 node build_ssg.js，输出目录 dist），之后每次 push 自动部署。\n" +
-        "    详见 DEPLOY.md。"
-    );
-    return;
+  // 若已安装 edgeone CLI 并配置了 EO_API_TOKEN，可直接命令行部署
+  const token = process.env.EO_API_TOKEN;
+  if (token) {
+    try {
+      console.log("\n🚀 正在部署 dist/ 到 EdgeOne Pages ...");
+      execFileSync("npx", ["edgeone", "pages", "deploy", "dist", "-n", "shinian-blog", "-t", token], {
+        cwd: ROOT,
+        stdio: "inherit",
+      });
+      console.log("✅ 部署完成。");
+      return;
+    } catch (e) {
+      console.error("❌ EdgeOne CLI 部署失败，请检查 EO_API_TOKEN 与 edgeone 是否安装（npm i -g edgeone）。");
+    }
   }
-  try {
-    console.log("\n🚀 正在部署 dist/ 到 Cloudflare Pages ...");
-    execFileSync("npx", ["wrangler", "pages", "deploy", "dist", "--project-name", "shinian-blog"], {
-      cwd: ROOT,
-      stdio: "inherit",
-    });
-    console.log("✅ 部署完成。");
-  } catch (e) {
-    console.error("❌ 部署失败，请检查 CF_API_TOKEN 与 wrangler 配置。");
-  }
+  // 默认走「直接上传」：无需命令行，把 dist/ 拖进 EdgeOne 控制台即可
+  console.log(
+    "\n📁 已生成 dist/，请按以下方式上线（无需命令行）：\n" +
+      "    1) 打开 EdgeOne 控制台 → Pages（或 Makers）→ 新建项目 → 选择「直接上传」。\n" +
+      "    2) 把本地 shinian-blog/dist/ 整个文件夹拖进去（或上传 dist-upload.zip 解压后的内容）。\n" +
+      "    3) 点击开始部署，得到 *.edgeone.run / *.edgeone.app 预览地址。\n" +
+      "    4) 项目设置里添加自定义域名 bthb666.icu（加速区域选「海外/全球」可免备案），按提示加 CNAME，自动签发 HTTPS。\n" +
+      "    （想以后 push 自动上线，可改用 Git 方式：构建命令 node build_ssg.js，输出目录 dist。）"
+  );
 }
 
 async function main() {
