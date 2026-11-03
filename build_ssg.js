@@ -256,5 +256,12 @@ fs.writeFileSync(
 );
 fs.writeFileSync(path.join(DIST, "sitemap.xml"), buildSitemap(), "utf8");
 copyAssets();
+// 复制根目录静态文件（如百度站点验证文件 baidu_verify_*.html）到 dist/ 根
+const staticSrc = path.join(ROOT, "static");
+if (fs.existsSync(staticSrc)) {
+  const files = fs.readdirSync(staticSrc);
+  files.forEach((f) => fs.copyFileSync(path.join(staticSrc, f), path.join(DIST, f)));
+  if (files.length) console.log(`   根目录静态文件已复制：${files.join(", ")}`);
+}
 console.log(`✅ 已生成 ${articles.length} 篇文章 + 首页 + sitemap + robots 到 dist/`);
 console.log(`   部署域名： ${BASE}`);
