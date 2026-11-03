@@ -2,7 +2,7 @@
   "name": "shinian-blog",
   "version": "1.0.0",
   "private": true,
-  "description": "十年博客 — 纯静态 SSG 个人博客（Cloudflare Pages 部署）",
+  "description": "十年博客 — 纯静态 SSG 个人博客（EdgeOne Pages 部署）",
   "scripts": {
     "build": "node build_ssg.js",
     "publish": "node publish.js",
