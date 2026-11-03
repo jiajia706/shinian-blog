@@ -79,6 +79,7 @@ function buildIndex() {
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="baidu-site-verification" content="codeva-9VN12Zhjes" />
+  <meta name="baidu-site-verification" content="codeva-YThY8YBPuW" />
   <title>十年博客 — 记录技术、生活与思考</title>
   <meta name="description" content="十年博客，一个记录技术教程、生活随笔与实时资讯的个人博客，聚焦科技金融、AI 编程与生活方式。" />
   <meta name="keywords" content="十年博客,技术博客,科技金融,AI编程,个人博客,生活随笔,实时资讯" />
