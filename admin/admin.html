@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>十年博客 · 发布后台</title>
+  <style>
+    :root { --bg:#f5f6f8; --card:#fff; --line:#e6e8eb; --text:#1f2329; --muted:#8a919f; --brand:#3b6cff; --brand-d:#2f57d6; --ok:#1f9d55; --warn:#d97706; --err:#e5484d; }
+    * { box-sizing: border-box; }
+    body { margin:0; background:var(--bg); color:var(--text); font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif; line-height:1.6; }
+    .wrap { max-width:760px; margin:0 auto; padding:28px 18px 60px; }
+    header.top { display:flex; align-items:baseline; justify-content:space-between; margin-bottom:18px; flex-wrap:wrap; gap:8px; }
+    header.top h1 { font-size:22px; margin:0; }
+    header.top .cnt { font-size:13px; color:var(--muted); }
+    .card { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:20px; margin-bottom:16px; }
+    label { display:block; font-size:13px; font-weight:600; margin:0 0 6px; }
+    .hint { font-size:12px; color:var(--muted); font-weight:400; margin-left:6px; }
+    input[type=text], select, textarea { width:100%; border:1px solid var(--line); border-radius:10px; padding:10px 12px; font-size:14px; font-family:inherit; color:var(--text); background:#fff; outline:none; transition:border-color .15s; }
+    input[type=text]:focus, select:focus, textarea:focus { border-color:var(--brand); }
+    textarea { min-height:220px; resize:vertical; line-height:1.7; }
+    .row { display:flex; gap:14px; flex-wrap:wrap; }
+    .row > div { flex:1; min-width:200px; }
+    .field { margin-bottom:16px; }
+    .cover-zone { display:flex; gap:14px; align-items:center; flex-wrap:wrap; }
+    .preview { width:140px; height:90px; border:1px dashed var(--line); border-radius:10px; background:#fafbfc; display:flex; align-items:center; justify-content:center; color:var(--muted); font-size:12px; overflow:hidden; }
+    .preview img { width:100%; height:100%; object-fit:cover; }
+    .file-btn { display:inline-block; padding:9px 14px; border:1px solid var(--line); border-radius:10px; font-size:13px; cursor:pointer; background:#fff; }
+    .file-btn:hover { border-color:var(--brand); color:var(--brand); }
+    input[type=file] { display:none; }
+    .btn { width:100%; border:0; border-radius:11px; padding:13px; font-size:15px; font-weight:600; color:#fff; background:var(--brand); cursor:pointer; transition:background .15s; }
+    .btn:hover { background:var(--brand-d); }
+    .btn:disabled { background:#b9c2d0; cursor:not-allowed; }
+    .status { margin-top:14px; padding:12px 14px; border-radius:10px; font-size:14px; display:none; }
+    .status.ok { display:block; background:#e9f7ef; color:var(--ok); border:1px solid #b7e4c7; }
+    .status.warn { display:block; background:#fef3e2; color:var(--warn); border:1px solid #f5d99b; }
+    .status.err { display:block; background:#fdecec; color:var(--err); border:1px solid #f3b9bb; }
+    .foot { font-size:12px; color:var(--muted); text-align:center; margin-top:8px; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header class="top">
+      <h1>十年博客 · 发布后台</h1>
+      <span class="cnt" id="cnt">加载中…</span>
+    </header>
+
+    <div class="card">
+      <div class="field">
+        <label>文章标题</label>
+        <input type="text" id="title" placeholder="例如：如何挑选第一台相机" maxlength="80" />
+      </div>
+
+      <div class="row">
+        <div class="field">
+          <label>分类</label>
+          <select id="category">
+            <option value="个人博客">个人博客</option>
+            <option value="随风笔记">随风笔记</option>
+            <option value="实时要闻">实时要闻</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>封面图 <span class="hint">建议横图 1200×800，≤5MB</span></label>
+          <div class="cover-zone">
+            <label class="file-btn" for="cover">选择图片</label>
+            <input type="file" id="cover" accept="image/*" />
+            <div class="preview" id="preview">预览</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>摘要 <span class="hint">可留空，自动截取正文前 60 字</span></label>
+        <input type="text" id="excerpt" placeholder="一句话概括（选填）" maxlength="100" />
+      </div>
+
+      <div class="field">
+        <label>正文 <span class="hint">段落之间空一行即可自动分段</span></label>
+        <textarea id="content" placeholder="在这里写正文…&#10;&#10;空一行开始新段落。"></textarea>
+      </div>
+
+      <button class="btn" id="publishBtn">发布文章</button>
+      <div class="status" id="status"></div>
+    </div>
+
+    <p class="foot">发布后会自动保存并提交到 Git，EdgeOne 通常 1–2 分钟内自动上线。</p>
+  </div>
+
+  <script>
+    // 显示当前文章数
+    fetch('/api/status').then(r=>r.json()).then(d=>{
+      document.getElementById('cnt').textContent = '当前文章数：' + (d.count||0);
+    }).catch(()=>{ document.getElementById('cnt').textContent='（无法获取状态）'; });
+
+    // 封面预览
+    let coverBase64 = '', coverExt = '';
+    const coverInput = document.getElementById('cover');
+    const preview = document.getElementById('preview');
+    coverInput.addEventListener('change', function(){
+      const file = this.files[0];
+      if(!file){ coverBase64=''; coverExt=''; preview.textContent='预览'; preview.innerHTML='预览'; return; }
+      if(file.size > 5*1024*1024){ alert('图片超过 5MB，请压缩后再上传'); this.value=''; return; }
+      coverExt = (file.name.split('.').pop() || (file.type.split('/')[1]) || 'jpg').toLowerCase();
+      const reader = new FileReader();
+      reader.onload = function(e){
+        const result = e.target.result; // data:image/xxx;base64,....
+        coverBase64 = result.split(',')[1] || '';
+        preview.innerHTML = '<img src="'+result+'" alt="预览">';
+      };
+      reader.readAsDataURL(file);
+    });
+
+    // 发布
+    const btn = document.getElementById('publishBtn');
+    const status = document.getElementById('status');
+    btn.addEventListener('click', function(){
+      const title = document.getElementById('title').value.trim();
+      const category = document.getElementById('category').value;
+      const excerpt = document.getElementById('excerpt').value.trim();
+      const content = document.getElementById('content').value.trim();
+
+      if(!title){ return show('err','请填写标题'); }
+      if(!content){ return show('err','请填写正文'); }
+
+      btn.disabled = true; btn.textContent = '发布中…';
+      show('', '');
+
+      fetch('/api/publish', {
+        method:'POST',
+        headers:{ 'Content-Type':'application/json' },
+        body: JSON.stringify({ title, category, excerpt, content, image: coverBase64, imageExt: coverExt })
+      }).then(r=>r.json()).then(d=>{
+        btn.disabled = false; btn.textContent = '发布文章';
+        if(d.success){
+          show(d.pushOk ? 'ok' : 'warn', (d.message||'') + (d.id?('（文章 id '+d.id+'）'):''));
+          if(d.pushOk){ document.getElementById('title').value=''; document.getElementById('excerpt').value=''; document.getElementById('content').value=''; coverInput.value=''; coverBase64=''; coverExt=''; preview.innerHTML='预览'; }
+          fetch('/api/status').then(r=>r.json()).then(s=>{ document.getElementById('cnt').textContent='当前文章数：'+(s.count||0); });
+        } else {
+          show('err', d.message||'发布失败');
+        }
+      }).catch(e=>{
+        btn.disabled = false; btn.textContent = '发布文章';
+        show('err','网络错误：'+e.message);
+      });
+    });
+
+    function show(type, msg){
+      status.className = 'status' + (type?(' '+type):'');
+      status.textContent = msg;
+    }
+  </script>
+</body>
+</html>
